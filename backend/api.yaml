@@ -1,0 +1,341 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0-oas3
+  title: Chat app
+tags:
+  - name: user
+  - name: message
+  - name: chat
+security:
+  - bearerAuth: []
+paths:
+  /api/user/:
+    post:
+      tags:
+        - user
+      summary: Register
+      requestBody:
+        $ref: '#/components/requestBodies/Register'
+      responses:
+        '201':
+          $ref: '#/components/responses/UserRegistered'
+        '400':
+          description: User already exists
+  /api/user/login:
+    post:
+      tags:
+        - user
+      summary: Login
+      requestBody:
+        $ref: '#/components/requestBodies/Login'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserRegistered'
+        '401':
+          description: Invalid email or password
+
+  /api/chat:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - chat
+      summary: Create or access a 1 on 1 chat
+      requestBody:
+        $ref: '#/components/requestBodies/UserId'
+      responses:
+        '200':
+          description: Created or fetched 1 to 1 chat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Chats'
+        '400':
+          description: UserId param not sent with request
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - chat
+      summary: Fetch chats
+      responses:
+        '200':
+          $ref: '#/components/schemas/Chats'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/chat/group:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - chat
+      summary: Create group chat
+      requestBody:
+        $ref: '#/components/requestBodies/CreateGroup'
+      responses:
+        '200':
+          $ref: '#/components/schemas/Chats'
+        '400':
+          description: Error
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/chat/rename:
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - chat
+      summary: Rename group chat
+      requestBody:
+        $ref: '#/components/requestBodies/RenameGroup'
+      responses:
+        '200':
+          $ref: '#/components/schemas/Chats'
+        '400':
+          description: Error
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/chat/groupadd:
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - chat
+      summary: Add user to group
+      requestBody:
+        $ref: '#/components/requestBodies/Groupadd'
+      responses:
+        '200':
+          $ref: '#/components/schemas/Chats'
+        '404':
+          description: Chat not found
+        '401':
+          description: Unauthorized
+  /api/chat/groupremove:
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - chat
+      summary: Remove user to group
+      requestBody:
+        $ref: '#/components/requestBodies/Groupadd'
+      responses:
+        '200':
+          $ref: '#/components/schemas/Chats'
+        '404':
+          description: Chat not found
+        '401':
+          description: Unauthorized
+  /api/message:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - message
+      summary: Send message
+      requestBody:
+        $ref: '#/components/requestBodies/SendMessage'
+      responses:
+        '200':
+          $ref: '#/components/schemas/Messages'
+        '400':
+          description: Invalid data passed
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/message/{chatId}:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - message
+      summary: Get all messages
+      parameters:
+        - in: path
+          name: chatId
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          $ref: '#/components/schemas/Chats'
+        '400':
+          description: Error
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+servers:
+  - url: http://localhost:5000/
+components:
+  requestBodies:
+    Register:
+      content:
+        application/json:
+          schema:
+            properties:
+              name:
+                type: string
+              email:
+                type: string
+              password:
+                type: string
+              pic:
+                type: string
+      required: true
+    Login:
+      content:
+        application/json:
+          schema:
+            properties:
+              email:
+                type: string
+              password:
+                type: string
+      required: true
+    UserId:
+      content:
+        application/json:
+          schema:
+            properties:
+              userId:
+                type: string
+      required: true
+    CreateGroup:
+      content:
+        application/json:
+          schema:
+            properties:
+              name:
+                type: string
+              users:
+                type: array
+                items:
+                  type: string
+      required: true
+    RenameGroup:
+      content:
+        application/json:
+          schema:
+            properties:
+              chatId:
+                type: string
+              chatName:
+                type: string
+      required: true
+    Groupadd:
+      content:
+        application/json:
+          schema:
+            properties:
+              chatId:
+                type: string
+              userId:
+                type: string
+      required: true
+    SendMessage:
+      content:
+        application/json:
+          schema:
+            properties:
+              content:
+                type: string
+              chatId:
+                type: string
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    UserRegistered:
+      description: User created
+      content:
+        application/json:
+          schema:
+            properties:
+              _id:
+                type: string
+              name:
+                type: string
+              email:
+                type: string
+              isAdmin:
+                type: boolean
+              pic:
+                type: string
+              token:
+                type: string
+    UnauthorizedError:
+      description: Access token is missing or invalid
+  schemas:
+    Users:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: ObjectId
+        pic:
+          type: string
+        isAdmin:
+          type: boolean
+          default: false
+        name:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+      xml:
+        name: users
+    Messages:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: ObjectId
+        readBy:
+          type: array
+          items:
+            $ref: '#/components/schemas/Users'
+        sender:
+          $ref: '#/components/schemas/Users'
+        content:
+          type: string
+        chat:
+          $ref: '#/components/schemas/Chats'
+        createdAt:
+          type: string
+          format: date
+        updatedAt:
+          type: string
+          format: date
+      xml:
+        name: Messages
+    Chats:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: ObjectId
+        chatName:
+          type: string
+        isGroupChat:
+          type: boolean
+          default: false
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/Users'
+        latestMessage:
+          $ref: '#/components/schemas/Messages'
+        groupAdmin:
+          $ref: '#/components/schemas/Users'
+        createdAt:
+          type: string
+          format: date
+        updatedAt:
+          type: string
+          format: date
+      xml:
+        name: Chats
